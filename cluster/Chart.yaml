@@ -1,0 +1,7 @@
+apiVersion: v2
+name: cluster
+version: 1.0.0
+dependencies:
+  - name: postgresql
+    version: 11.9.13
+    repository: https://charts.bitnami.com/bitnami

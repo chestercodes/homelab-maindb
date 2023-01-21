@@ -1,0 +1,20 @@
+createStorage: false
+
+postgresql:
+  image:
+    registry: docker.io
+    repository: bitnami/postgresql
+    tag: 14.5.0-debian-11-r35
+
+  auth:
+    enablePostgresUser: true
+    database: "postgres"
+    existingSecret: "maindb-postgresql"
+    secretKeys:
+      adminPasswordKey: postgres-password
+
+  primary:
+    extendedConfiguration: |-
+      shared_preload_libraries = 'pg_stat_statements'
+      pg_stat_statements.max = 1000
+      pg_stat_statements.track = 'all'

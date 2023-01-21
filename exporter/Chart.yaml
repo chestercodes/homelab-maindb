@@ -1,0 +1,7 @@
+apiVersion: v2
+name: exporter
+version: 1.0.0
+dependencies:
+  - name: prometheus-postgres-exporter
+    version: 3.1.5
+    repository: https://prometheus-community.github.io/helm-charts

@@ -1,0 +1,9 @@
+capacity: 500Gi
+path: /slowmirror/homelab/agents/bigstorage/maindb-production
+volLabel: maindbprod
+
+postgresql:
+  primary:
+    persistence:
+      size: 500Gi
+

@@ -1,0 +1,11 @@
+createStorage: true
+
+postgresql:
+  primary:
+    persistence:
+      enabled: true
+      size: 500Mi
+      existingClaim: "maindb-pvc"
+      mountPath: /bitnami/postgresql
+      accessModes:
+        - ReadWriteOnce

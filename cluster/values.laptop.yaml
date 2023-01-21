@@ -1,0 +1,10 @@
+
+capacity: 5Gi
+path: /bigstorage/maindb-production
+volLabel: maindbprod
+
+postgresql:
+  primary:
+    persistence:
+      size: 5Gi
+

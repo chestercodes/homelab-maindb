@@ -1,0 +1,45 @@
+
+{{- if .Values.createStorage }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: maindb-pv
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    vol: "{{ .Values.volLabel }}"
+spec:
+  capacity:
+    storage: "{{ .Values.capacity }}"
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: "{{ .Values.path }}"
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: nodename
+              operator: In
+              values:
+                - bigstorage
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: maindb-pvc
+  namespace: "{{ .Release.Namespace }}"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: "{{ .Values.capacity }}"
+  storageClassName: local-storage
+  selector:
+    matchLabels:
+      vol: "{{ .Values.volLabel }}"
+{{- end }}

@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: "{{ .Release.Namespace }}"
+  name: setup-script
+data:
+  create-pingapp.sql: |
+    CREATE DATABASE pingapp
+        WITH
+        OWNER = postgres
+        ENCODING = 'UTF8'
+        LC_COLLATE = 'en_US.UTF-8'
+        LC_CTYPE = 'en_US.UTF-8'
+        TABLESPACE = pg_default
+        CONNECTION LIMIT = -1
+        IS_TEMPLATE = False;
+  setup-postgres.sql: |
+    CREATE OR REPLACE FUNCTION __tmp_create_user() returns void as $$
+    BEGIN
+      IF NOT EXISTS (
+              SELECT FROM   pg_catalog.pg_user
+              WHERE  usename = 'pingapp') THEN
+        CREATE USER pingapp;
+      END IF;
+      
+      IF NOT EXISTS (
+              SELECT FROM   pg_catalog.pg_user
+              WHERE  usename = 'migrations') THEN
+        CREATE USER migrations;
+      END IF;
+      
+      IF NOT EXISTS (
+            SELECT 
+            FROM   pg_catalog.pg_user
+            WHERE  usename = 'exporter') THEN
+        CREATE USER exporter;
+      END IF;
+
+      IF NOT EXISTS (
+            SELECT * FROM pg_available_extensions 
+            WHERE 
+                name = 'pg_stat_statements'
+          and installed_version is not null
+      ) THEN
+        CREATE EXTENSION pg_stat_statements;
+      END IF;
+
+    END;
+    $$ language plpgsql;
+
+    SELECT __tmp_create_user();
+    DROP FUNCTION __tmp_create_user();
+
+    ALTER USER migrations WITH PASSWORD 'PG_MIGRATIONS_PWD';
+    ALTER USER migrations SET SEARCH_PATH TO migrations,pg_catalog,public;
+
+    ALTER USER pingapp WITH PASSWORD 'PG_PINGAPP_PWD';
+    ALTER USER pingapp SET SEARCH_PATH TO pingapp,pg_catalog,public;
+
+    GRANT ALL ON DATABASE pingapp TO migrations;
+    GRANT CONNECT ON DATABASE pingapp TO migrations;
+
+    -- setup postgres exporter
+    ALTER USER exporter WITH PASSWORD 'PG_EXPORTER_PWD';
+    ALTER USER exporter SET SEARCH_PATH TO exporter,pg_catalog,public;
+    GRANT CONNECT ON DATABASE postgres TO exporter;
+    GRANT pg_monitor to exporter;
+
+  setup-pingapp.sql: |
+    GRANT ALL ON DATABASE pingapp TO pingapp;
+
+    GRANT CONNECT ON DATABASE pingapp TO pingapp;
+
+    GRANT SELECT, INSERT, UPDATE, DELETE
+      ON ALL TABLES IN SCHEMA public 
+      TO pingapp;

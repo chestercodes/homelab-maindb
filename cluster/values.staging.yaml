@@ -1,0 +1,9 @@
+postgresql:
+  image:
+    registry: docker.io
+    repository: bitnami/postgresql
+    tag: 14.5.0-debian-11-r35
+
+# only used if createStorage is true
+path: /bigstorage/maindb-staging
+volLabel: maindbstaging

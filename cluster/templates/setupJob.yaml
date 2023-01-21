@@ -1,0 +1,75 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  namespace: "{{ .Release.Namespace }}"
+  name: "{{ .Release.Name }}-setup-job"
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      containers:
+        - name: run
+          image: postgres:14
+          command:
+            - "bash"
+            - "-c"
+            - |
+              cd /tmp/run
+              cp *.sql /etc/safedir/
+              cd /etc/safedir
+              chmod 777 *.sql
+              psql -tc "SELECT 1 FROM pg_database WHERE datname = 'pingapp'" | grep -q 1 || psql -f create-pingapp.sql
+              sed -i "s#PG_EXPORTER_PWD#$PG_EXPORTER_PWD#g" setup-postgres.sql
+              sed -i "s#PG_PINGAPP_PWD#$PG_PINGAPP_PWD#g" setup-postgres.sql
+              sed -i "s#PG_MIGRATIONS_PWD#$PG_MIGRATIONS_PWD#g" setup-postgres.sql
+              psql -f setup-postgres.sql
+              psql -d pingapp -f setup-pingapp.sql
+
+          volumeMounts:
+            - name: runvol
+              mountPath: /tmp/run
+            - name: safedir
+              mountPath: /etc/safedir
+          env:
+            - name: PGHOST
+              value: homelabmaindb
+            - name: PGDATABASE
+              value: postgres
+            - name: PGUSER
+              value: postgres
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: maindb-postgresql
+                  key: postgres-password
+            - name: PG_EXPORTER_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: maindb-postgresql
+                  key: exporter-password
+            - name: PG_PINGAPP_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: maindb-postgresql
+                  key: pingapp-password
+            - name: PG_MIGRATIONS_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: maindb-postgresql
+                  key: migrations-password
+      volumes:
+        - name: runvol
+          configMap:
+            name: setup-script
+            items:
+              - key: create-pingapp.sql
+                path: create-pingapp.sql
+              - key: setup-postgres.sql
+                path: setup-postgres.sql
+              - key: setup-pingapp.sql
+                path: setup-pingapp.sql
+        - name: safedir
+          emptyDir: {}
+      restartPolicy: Never

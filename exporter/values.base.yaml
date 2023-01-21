@@ -1,0 +1,17 @@
+prometheus-postgres-exporter:
+  serviceMonitor:
+    enabled: false
+  config:
+    datasource:
+      host: homelabmaindb
+      user: exporter
+      passwordSecret:
+        name: "maindb-postgresql"
+        key: "exporter-password"
+      port: "5432"
+      database: "postgres"
+      sslmode: disable
+      extraParams: ""
+    excludeDatabases: []
+    includeDatabases: []
+    constantLabels: {}
